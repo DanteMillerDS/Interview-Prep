@@ -29,7 +29,6 @@ class RidgeRegressionModel:
         I = np.eye(X_transpose.shape[0])
         I[0, 0] = 0  # Don't regularize the bias term
         self.weights = np.linalg.inv(X_transpose.dot(X_train_bias) + self.alpha * I).dot(X_transpose).dot(y_train)
-    
     def predict(self, X_test):
         """
         Predict the target values using the trained model.
