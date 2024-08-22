@@ -1,16 +1,20 @@
 import numpy as np
 
-class LinearModel:
-    def __init__(self, X, y):
+class RidgeRegressionModel:
+    def __init__(self,l):
         self.w = None
         self.b = None
-
+        self.l = l
     def train(self, X, y):
         # Add a column of ones to X to account for the bias term
         X = np.concatenate((X, np.ones((X.shape[0], 1))), axis=1)
         y = y.reshape(-1, 1)
+        if self.l is None:
+            self.l = 0
+        identity = np.identity(X.shape[1])
+        identity[-1,-1] = 0
         # Compute the weights using the normal equation
-        self.w = np.linalg.inv(X.T @ X) @ X.T @ y
+        self.w = np.linalg.inv(X.T @ X + self.l * identity) @ X.T @ y
         self.b = self.w[-1]  # Extract the bias term
         self.w = self.w[:-1]  # Keep the weights separate from the bias
 
@@ -23,9 +27,9 @@ class LinearModel:
         # Calculate the mean squared error
         return np.mean((y - y_pred) ** 2)
 
-class TestLinearModel:
+class TestRidgeRegressionModel:
     def __init__(self):
-        self.model = LinearModel(None, None)
+        self.model = RidgeRegressionModel(None, None)
 
     def test_train(self):
         # Create a simple dataset
@@ -72,5 +76,5 @@ class TestLinearModel:
         print("All tests passed.")
 
 # Instantiate and run the tests
-tester = TestLinearModel()
+tester = TestRidgeRegressionModel()
 tester.run_all_tests()
