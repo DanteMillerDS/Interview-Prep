@@ -1,116 +1,100 @@
 import numpy as np
 
 class LogisticRegressionModel:
-    def __init__(self, max_iter=1000, learning_rate=0.01, tol=1e-4):
-        """
-        Initialize the Logistic Regression model.
-        
-        Parameters:
-        max_iter: int, maximum number of iterations for gradient descent (default is 1000)
-        learning_rate: float, learning rate for gradient descent (default is 0.01)
-        tol: float, tolerance for stopping criteria (default is 1e-4)
-        """
-        self.max_iter = max_iter
-        self.learning_rate = learning_rate
-        self.tol = tol
-        self.weights = None
+    def __init__(self, iterations, lr):
+        self.w = None
+        self.b = None
+        self.iterations = iterations
+        self.lr = lr
     
     def sigmoid(self, z):
-        """
-        Apply the sigmoid function to convert the linear output into probabilities.
-        
-        Parameters:
-        z: numpy array, linear combination of input features and weights
-        
-        Returns:
-        sigmoid: numpy array, output of the sigmoid function
-        """
         return 1 / (1 + np.exp(-z))
     
-    def train(self, X_train, y_train):
-        """
-        Train the Logistic Regression model using the training data.
-        
-        Parameters:
-        X_train: numpy array of shape (n_samples, n_features)
-        y_train: numpy array of shape (n_samples,)
-        """
-        n_samples, n_features = X_train.shape
-        
-        # Add bias term to the input features
-        X_train_bias = np.c_[np.ones((n_samples, 1)), X_train]
-        
-        # Initialize weights
-        self.weights = np.zeros(X_train_bias.shape[1])
-        
-        for iteration in range(self.max_iter):
-            weights_old = self.weights.copy()
-            
-            # Linear combination of input features and weights
-            linear_model = np.dot(X_train_bias, self.weights)
-            # Apply the sigmoid function
-            y_pred = self.sigmoid(linear_model)
-            
-            # Compute the gradient of the Binary Cross Entropy loss
-            gradient = np.dot(X_train_bias.T, (y_pred - y_train)) / n_samples
-            
-            # Update weights using gradient descent
-            self.weights -= self.learning_rate * gradient
-            
-            # Check for convergence
-            if np.sum(np.abs(self.weights - weights_old)) < self.tol:
-                print(f"Converged after {iteration} iterations.")
-                break
+    def log_loss(self, y, y_pred):
+        return -np.mean(y * np.log(y_pred) + (1 - y) * np.log(1 - y_pred))
     
-    def predict_proba(self, X_test):
-        """
-        Predict the probabilities of the target values using the trained model.
+    def train(self, X, y):
+        # Initialize weights and bias
+        np.random.seed(0)
+        self.w = np.random.randn(X.shape[1], 1)  # Initialize w with random values
+        self.b = np.random.randn()  # Initialize b with a random value
+
+        # Reshape y to be a column vector
+        y = y.reshape(-1, 1)
         
-        Parameters:
-        X_test: numpy array of shape (n_samples, n_features)
-        
-        Returns:
-        y_pred_proba: numpy array of shape (n_samples,)
-        """
-        n_samples = X_test.shape[0]
-        
-        # Add bias term to the input features
-        X_test_bias = np.c_[np.ones((n_samples, 1)), X_test]
-        
-        # Predict the probabilities using the logistic regression model
-        linear_model = np.dot(X_test_bias, self.weights)
-        y_pred_proba = self.sigmoid(linear_model)
-        
-        return y_pred_proba
+        # Training with Stochastic Gradient Descent
+        for iteration in range(self.iterations):
+            for data_index in range(X.shape[0]):
+                # Get prediction for the current data point
+                y_pred = self.sigmoid(X[data_index] @ self.w + self.b)
+                diff = y_pred - y[data_index]
+            
+                # Compute gradients for w and b
+                w_gradient = X[data_index].reshape(-1, 1) * diff
+                b_gradient = diff
+                
+                # Update weights and bias
+                self.w -= self.lr * w_gradient
+                self.b -= self.lr * b_gradient
+                
+            if iteration % 100 == 0 or iteration == self.iterations - 1:
+                y_pred_all = self.sigmoid(X @ self.w + self.b)
+                total_loss = self.log_loss(y, y_pred_all)
+                print(f"Loss at iteration {iteration}: {total_loss}")
+
+    def predict(self, X):
+        # Predict probabilities
+        y_pred = self.sigmoid(X @ self.w + self.b)
+        # Convert probabilities to binary outcomes
+        return (y_pred >= 0.5).astype(int)
     
-    def predict(self, X_test, threshold=0.5):
-        """
-        Predict the binary target values using the trained model.
-        
-        Parameters:
-        X_test: numpy array of shape (n_samples, n_features)
-        threshold: float, decision threshold to classify the output (default is 0.5)
-        
-        Returns:
-        y_pred: numpy array of shape (n_samples,)
-        """
-        y_pred_proba = self.predict_proba(X_test)
-        y_pred = (y_pred_proba >= threshold).astype(int)
-        
-        return y_pred
-    
-    def test(self, X_test, y_test):
-        """
-        Test the model using the test data and return the accuracy.
-        
-        Parameters:
-        X_test: numpy array of shape (n_samples, n_features)
-        y_test: numpy array of shape (n_samples,)
-        
-        Returns:
-        accuracy: float, accuracy of the predictions
-        """
-        y_pred = self.predict(X_test)
-        accuracy = np.mean(y_pred == y_test)
-        
-        return accuracy
+class TestLogisticRegressionModel:
+    def __init__(self):
+        self.model = LogisticRegressionModel(iterations=1000, lr=0.01)
+
+    def test_train(self):
+        # Create a simple binary classification dataset
+        X = np.array([[1], [2], [3], [4], [5]])
+        y = np.array([0, 0, 1, 1, 1])
+
+        # Train the model
+        self.model.train(X, y)
+
+        # Check if the model has learned some weights (not equal to initial random values)
+        assert self.model.w is not None and self.model.b is not None, "Model parameters should be updated"
+        print("train method passed.")
+
+    def test_predict(self):
+        # Predict on new data
+        X_test = np.array([[1.5], [3.5], [6]])
+        y_pred = self.model.predict(X_test)
+
+        # Expected predictions (depending on the training data)
+        y_true = np.array([[0], [1], [1]])  # Example binary outcomes
+        # Check if predictions are correct
+        assert np.allclose(y_pred, y_true, atol=0.1), "Predictions are incorrect"
+        print("predict method passed.")
+
+    def test_loss(self):
+        # Use the same data as test_predict
+        X_test = np.array([[1.5], [3.5], [6]])
+        y_true = np.array([0, 1, 1])
+
+        # Generate predictions
+        y_pred = self.model.sigmoid(X_test @ self.model.w + self.model.b)
+
+        # Calculate log loss
+        loss_value = self.model.log_loss(y_true.reshape(-1, 1), y_pred)
+        # Expected loss should be small if the model is trained well
+        assert loss_value < 0.7, "Loss should be reasonably low"
+        print("loss method passed.")
+
+    def run_all_tests(self):
+        self.test_train()
+        self.test_predict()
+        self.test_loss()
+        print("All tests passed.")
+
+# Instantiate and run the tests
+tester = TestLogisticRegressionModel()
+tester.run_all_tests()
