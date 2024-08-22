@@ -1,6 +1,6 @@
 import numpy as np
 
-class LinearRegression:
+class LinearModel:
     def __init__(self, X, y):
         self.w = None
         self.b = None
@@ -23,9 +23,9 @@ class LinearRegression:
         # Calculate the mean squared error
         return np.mean((y - y_pred) ** 2)
 
-class TestLinearRegression:
+class TestLinearModel:
     def __init__(self):
-        self.model = LinearRegression(None, None)
+        self.model = LinearModel(None, None)
 
     def test_train(self):
         # Create a simple dataset
@@ -72,5 +72,5 @@ class TestLinearRegression:
         print("All tests passed.")
 
 # Instantiate and run the tests
-tester = TestLinearRegression()
+tester = TestLinearModel()
 tester.run_all_tests()
