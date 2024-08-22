@@ -1,22 +1,37 @@
 import numpy as np
 
-class RidgeRegressionModel:
-    def __init__(self,l):
+class LassoRegressionModel:
+    def __init__(self, iterations, alpha):
         self.w = None
-        self.b = None
-        self.l = l
+        self.b = 0
+        self.iterations = iterations
+        self.alpha = alpha
+
     def train(self, X, y):
-        # Add a column of ones to X to account for the bias term
-        X = np.concatenate((X, np.ones((X.shape[0], 1))), axis=1)
+        # Initialize weights and bias
+        self.w = np.zeros((X.shape[1], 1))
+        self.b = 0
+
+        # Reshape y to be a column vector
         y = y.reshape(-1, 1)
-        if self.l is None:
-            self.l = 0
-        identity = np.identity(X.shape[1])
-        identity[-1,-1] = 0
-        # Compute the weights using the normal equation
-        self.w = np.linalg.inv(X.T @ X + self.l * identity) @ X.T @ y
-        self.b = self.w[-1]  # Extract the bias term
-        self.w = self.w[:-1]  # Keep the weights separate from the bias
+        
+        # Training with Gradient Descent
+        for iteration in range(self.iterations):
+            y_pred = X @ self.w + self.b
+            diff = y_pred - y
+
+            # Compute gradients for w and b
+            w_gradient = X.T @ diff / len(y) + self.alpha * np.sign(self.w)
+            b_gradient = np.mean(diff)
+            
+            # Update weights and bias
+            self.w -= self.alpha * w_gradient
+            self.b -= self.alpha * b_gradient
+            
+            # Optionally, you could print the loss every few iterations
+            if iteration % 100 == 0 or iteration == self.iterations - 1:
+                loss = self.loss(y, y_pred) + self.alpha * np.sum(np.abs(self.w))
+                print(f"Loss at iteration {iteration}: {loss}")
 
     def predict(self, X):
         # Predict by adding the bias term manually
@@ -27,9 +42,9 @@ class RidgeRegressionModel:
         # Calculate the mean squared error
         return np.mean((y - y_pred) ** 2)
 
-class TestRidgeRegressionModel:
+class TestLassoRegressionModel:
     def __init__(self):
-        self.model = RidgeRegressionModel(None, None)
+        self.model = LassoRegressionModel(None, None)
 
     def test_train(self):
         # Create a simple dataset
@@ -76,5 +91,5 @@ class TestRidgeRegressionModel:
         print("All tests passed.")
 
 # Instantiate and run the tests
-tester = TestRidgeRegressionModel()
+tester = TestLassoRegressionModel()
 tester.run_all_tests()

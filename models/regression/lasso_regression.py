@@ -1,100 +1,103 @@
 import numpy as np
 
 class LassoRegressionModel:
-    def __init__(self, alpha=1.0, max_iter=1000, tol=1e-4):
-        """
-        Initialize the Lasso Regression model.
-        
-        Parameters:
-        alpha: float, regularization strength (default is 1.0)
-        max_iter: int, maximum number of iterations for coordinate descent (default is 1000)
-        tol: float, tolerance for stopping criteria (default is 1e-4)
-        """
+    def __init__(self, iterations, alpha, lr):
+        self.w = None
+        self.b = None
+        self.iterations = iterations
         self.alpha = alpha
-        self.max_iter = max_iter
-        self.tol = tol
-        self.weights = None
-    
-    def train(self, X_train, y_train):
-        """
-        Train the Lasso regression model using the training data.
+        self.lr = lr
+
+    def train(self, X, y):
+        # Initialize weights and bias
+        np.random.seed(0)
+        self.w = np.random.randn(X.shape[1], 1)  # Initialize w with random values
+        self.b = np.random.randn()  # Initialize b with a random value
+
+        # Reshape y to be a column vector
+        y = y.reshape(-1, 1)
         
-        Parameters:
-        X_train: numpy array of shape (n_samples, n_features)
-        y_train: numpy array of shape (n_samples,)
-        """
-        n_samples, n_features = X_train.shape
-        
-        # Add bias term to the input features
-        X_train_bias = np.c_[np.ones((n_samples, 1)), X_train]
-        
-        # Initialize weights
-        self.weights = np.zeros(X_train_bias.shape[1])
-        
-        for iteration in range(self.max_iter):
-            weights_old = self.weights.copy()
-            
-            for j in range(X_train_bias.shape[1]):
-                residual = y_train - X_train_bias.dot(self.weights)
-                rho_j = X_train_bias[:, j].dot(residual + self.weights[j] * X_train_bias[:, j])
+        # Training with Stochastic Gradient Descent
+        for iteration in range(self.iterations):
+            for data_index in range(X.shape[0]):
+                # Get prediction for the current data point
+                y_pred = X[data_index] @ self.w + self.b
+                diff = y_pred - y[data_index]
                 
-                if j == 0:  # No regularization on the bias term
-                    self.weights[j] = rho_j / X_train_bias[:, j].dot(X_train_bias[:, j])
-                else:
-                    self.weights[j] = self._soft_threshold(rho_j, self.alpha) / X_train_bias[:, j].dot(X_train_bias[:, j])
-            
-            # Check for convergence
-            if np.sum(np.abs(self.weights - weights_old)) < self.tol:
-                break
-    
-    def _soft_threshold(self, rho, alpha):
-        """
-        Soft thresholding function for Lasso regression.
-        
-        Parameters:
-        rho: float, calculated residual
-        alpha: float, regularization strength
-        
-        Returns:
-        float, updated weight for the feature
-        """
-        if rho > alpha:
-            return rho - alpha
-        elif rho < -alpha:
-            return rho + alpha
-        else:
-            return 0.0
-    
-    def predict(self, X_test):
-        """
-        Predict the target values using the trained model.
-        
-        Parameters:
-        X_test: numpy array of shape (n_samples, n_features)
-        
-        Returns:
-        y_pred: numpy array of shape (n_samples,)
-        """
-        n_samples = X_test.shape[0]
-        
-        # Add bias term to the input features
-        X_test_bias = np.c_[np.ones((n_samples, 1)), X_test]
-        
-        # Predict using the lasso regression model
-        y_pred = X_test_bias.dot(self.weights)
+                # Compute gradients for w and b
+                w_gradient = X[data_index].reshape(-1, 1) * diff + self.alpha * np.sign(self.w)
+                b_gradient = diff
+                
+                # Update weights and bias
+                self.w -= self.lr * w_gradient
+                self.b -= self.lr * b_gradient
+                
+            if iteration % 100 == 0 or iteration == self.iterations - 1:
+                total_loss = 0
+                for i in range(X.shape[0]):
+                    y_pred = X[i] @ self.w + self.b
+                    total_loss += 0.5 * (y_pred - y[i])**2
+                total_loss += self.alpha * np.sum(np.abs(self.w))
+                print(f"Loss at iteration {iteration}: {total_loss}")
+
+    def predict(self, X):
+        # Predict by adding the bias term manually
+        y_pred = X @ self.w + self.b
         return y_pred
-    
-    def test(self, X_test, y_test):
-        """
-        Test the model using the test data and return the Mean Squared Error.
-        
-        Parameters:
-        X_test: numpy array of shape (n_samples, n_features)
-        y_test: numpy array of shape (n_samples,)
-        
-        Returns:
-        mse: float, Mean Squared Error of the predictions
-        """
-        y_pred = self.predict(X_test)
-        mse = np.mean((y_test - y_pred) ** 2)
-        return mse
+
+    def loss(self, y, y_pred):
+        # Calculate the mean squared error
+        return np.mean((y - y_pred) ** 2)
+
+class TestLassoRegressionModel:
+    def __init__(self):
+        self.model = LassoRegressionModel(iterations=1000, alpha=0.1, lr=1e-3)
+
+    def test_train(self):
+        # Create a simple dataset
+        X = np.array([[1], [2], [3], [4], [5]])
+        y = np.array([2, 4, 6, 8, 10])
+
+        # Train the model
+        self.model.train(X, y)
+
+        # Check if weights are approximately correct considering L1 regularization
+        expected_w = np.array([[1.9]])  # Expect approximately 2, but Lasso might shrink it slightly
+        assert np.allclose(self.model.w, expected_w, atol=0.1), "Weight should be close to 0.2"
+        assert np.isclose(self.model.b, 0.2, atol=0.1), "Bias should be close to 0"
+        print("train method passed.")
+
+    def test_predict(self):
+        # Predict on new data
+        X_test = np.array([[6], [7], [8]])
+        y_pred = self.model.predict(X_test)
+
+        # Expected predictions
+        y_true = np.array([[12], [14], [16]])
+        # Check if predictions are correct
+        assert np.allclose(y_pred, y_true, atol=1), "Predictions are incorrect"
+        print("predict method passed.")
+
+    def test_loss(self):
+        # Use the same data as test_predict
+        X_test = np.array([[6], [7], [8]])
+        y_true = np.array([[12], [14], [16]])
+
+        # Generate predictions
+        y_pred = self.model.predict(X_test)
+
+        # Calculate loss
+        loss_value = self.model.loss(y_true, y_pred)
+        # Expected loss should be small
+        assert np.isclose(loss_value, 0, atol=0.1), "Loss should be close to 0"
+        print("loss method passed.")
+
+    def run_all_tests(self):
+        self.test_train()
+        self.test_predict()
+        self.test_loss()
+        print("All tests passed.")
+
+# Instantiate and run the tests
+tester = TestLassoRegressionModel()
+tester.run_all_tests()
