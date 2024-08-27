@@ -25,7 +25,7 @@ class LinearRegressionModel:
 
 class TestLinearRegressionModel:
     def __init__(self):
-        self.model = LinearRegressionModel(None, None)
+        self.model = LinearRegressionModel()
 
     def test_train(self):
         # Create a simple dataset
