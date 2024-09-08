@@ -18,7 +18,6 @@ class LogisticRegressionModel:
         np.random.seed(0)
         self.w = np.random.randn(X.shape[1], 1)  # Initialize w with random values
         self.b = np.random.randn()  # Initialize b with a random value
-
         # Reshape y to be a column vector
         y = y.reshape(-1, 1)
         

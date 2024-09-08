@@ -9,6 +9,8 @@ class BayesianLinearRegression:
         self.posterior_cov = None        # Placeholder for posterior covariance (Sigma_n)
 
     def train(self, X, y):
+        # Σ_n = (Σ_0⁻¹ + (1/σ²) * Xᵀ * X)⁻¹
+        # μ_n = Σ_n * (Σ_0⁻¹ * μ_0 + (1/σ²) * Xᵀ * y)
         # Inverting the prior covariance matrix (Sigma_0)
         prior_cov_inv = np.linalg.inv(self.prior_cov)
         
