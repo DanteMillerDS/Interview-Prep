@@ -159,3 +159,52 @@ FROM employees;
 -- Question 30: Use COALESCE to handle NULL values in a salary bonus report
 SELECT employee_name, COALESCE(bonus, 0) AS bonus
 FROM employees;
+
+-- Question 31: Calculate a 7-day rolling average of 'value' in a time series
+SELECT 
+    date,
+    value,
+    AVG(value) OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS rolling_avg_7_days
+FROM 
+    observations;
+
+-- Question 32: Handle NULL values in numeric and categorical columns by filling with mean and mode
+UPDATE data
+SET num_column = (SELECT AVG(num_column) FROM data)
+WHERE num_column IS NULL;
+
+UPDATE data
+SET cat_column = (
+    SELECT cat_column 
+    FROM data 
+    GROUP BY cat_column 
+    ORDER BY COUNT(*) DESC 
+    LIMIT 1
+)
+WHERE cat_column IS NULL;
+
+-- Question 33: Calculate average time difference between consecutive events for each user
+WITH OrderedEvents AS (
+    SELECT 
+        user_id,
+        event_time,
+        LAG(event_time) OVER (PARTITION BY user_id ORDER BY event_time) AS prev_event_time
+    FROM 
+        events
+),
+TimeDifferences AS (
+    SELECT 
+        user_id,
+        TIMESTAMPDIFF(SECOND, prev_event_time, event_time) AS time_diff
+    FROM 
+        OrderedEvents
+    WHERE 
+        prev_event_time IS NOT NULL
+)
+SELECT 
+    user_id, 
+    AVG(time_diff) AS avg_time_diff
+FROM 
+    TimeDifferences
+GROUP BY 
+    user_id;
