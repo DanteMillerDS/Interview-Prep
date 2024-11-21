@@ -158,6 +158,7 @@ def inorder_traversal(node):
 
 inorder_traversal(root)
 
+# Pre-order traversal (Root, Left, Right)
 def preorder_traversal(node):
     if node:
         print(node.val, end=" ")  # Visit the root
@@ -166,6 +167,7 @@ def preorder_traversal(node):
 
 preorder_traversal(root)
 
+# Post-order traversal (Left, Right, Root)
 def postorder_traversal(node):
     if node:
         postorder_traversal(node.left)
@@ -176,6 +178,7 @@ postorder_traversal(root)
 
 from collections import deque
 
+# Level-order traversal (Root, Level 2, Level 3, ...)
 def level_order_traversal(root):
     if not root:
         return
