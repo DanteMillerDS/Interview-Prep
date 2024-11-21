@@ -153,10 +153,45 @@ root.right = TreeNode(3)
 def inorder_traversal(node):
     if node:
         inorder_traversal(node.left)
-        print(node.val)
+        print(node.val, end=" ")  # Visit the root
         inorder_traversal(node.right)
 
 inorder_traversal(root)
+
+def preorder_traversal(node):
+    if node:
+        print(node.val, end=" ")  # Visit the root
+        preorder_traversal(node.left)
+        preorder_traversal(node.right)
+
+preorder_traversal(root)
+
+def postorder_traversal(node):
+    if node:
+        postorder_traversal(node.left)
+        postorder_traversal(node.right)
+        print(node.val, end=" ")  # Visit the root
+
+postorder_traversal(root)
+
+from collections import deque
+
+def level_order_traversal(root):
+    if not root:
+        return
+    
+    queue = deque([root])
+    while queue:
+        node = queue.popleft()  # Dequeue the front node
+        print(node.val, end=" ")  # Visit the node
+        
+        # Enqueue left and right children
+        if node.left:
+            queue.append(node.left)
+        if node.right:
+            queue.append(node.right)
+
+level_order_traversal(root)
 
 # 9. Graphs
 # Time Complexity:
